@@ -24,6 +24,8 @@ Two bundled references, read in this order:
 2. `docs/MIGRATION_GUIDE.md` — the public core-artifact migration guide. It covers the static, unexecuted
    assessment: ORM/schema, database metadata, XML/data, views/QWeb, Owl/frontend, POS, assets, and proof
    gates. Every code skeleton in it is unverified — check it against the local Odoo 20 source before use.
+3. `docs/BEFORE_AFTER_EXAMPLES.md` — side-by-side generic Odoo 19 and Odoo 20 snippets for teaching or
+   reviewing a concrete port. Treat every snippet as a skeleton and verify it against the target source.
 
 Static scan: `scripts/scan_odoo19_patterns.sh <addons-root>` (read-only, needs `rg`); per-module rule counts:
 `scripts/static_audit20.sh`; import resolver: `scripts/check_imports20.py`; staged official scripts:
@@ -93,6 +95,7 @@ Static scan: `scripts/scan_odoo19_patterns.sh <addons-root>` (read-only, needs `
 | Topic / symptom | Guide § | Lines | First action |
 |---|---|---|---|
 | Scope and inventory | 1-3 | — | Build the module, model, XML-ID, security, asset, and dependency inventory from the source |
+| Concrete source/target examples | separate reference | — | Read `docs/BEFORE_AFTER_EXAMPLES.md` before teaching or reviewing a code change |
 | ORM, schema, database metadata | 4.1 | — | Rewrite declarations and prove columns, constraints, indexes, and ownership |
 | XML/data, views, QWeb | 4.2-4.3 | — | Convert metadata and validate the complete view/data graph |
 | Owl, account reports, POS, assets | 4.4 | — | Rebase frontend behavior on Odoo 20 source and browser-test it |

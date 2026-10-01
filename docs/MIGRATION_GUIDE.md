@@ -14,7 +14,8 @@ model, view, report, or frontend meaning has changed.
 Use [`CORE_ARTIFACTS.md`](CORE_ARTIFACTS.md) as the main Odoo 19 versus Odoo 20 report. It records the
 observed artifact transition, its implication, and the proof that should be collected. Use
 [`MIGRATION_PROBLEMS.md`](MIGRATION_PROBLEMS.md) for symptoms and solutions from the executed migration
-experience.
+experience, and [`BEFORE_AFTER_EXAMPLES.md`](BEFORE_AFTER_EXAMPLES.md) when a concrete source/target snippet
+is needed.
 
 The migration must answer four separate questions:
 

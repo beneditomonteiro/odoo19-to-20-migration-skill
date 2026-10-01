@@ -6,6 +6,7 @@ It combines:
 - the complete migration skill used during a real multi-module port;
 - a quick-reference catalog of migration failures, symptoms, and solutions;
 - a public report of Odoo core artifact changes between Odoo 19 and Odoo 20;
+- side-by-side Odoo 19 → 20 code and XML examples;
 - explicit database, XML-ID, model, API, frontend, and module-taxonomy mappings;
 - a static-first procedure and reusable audit/migration scripts.
 
@@ -18,9 +19,10 @@ with values from your own controlled environment.
 1. Read [`SKILL.md`](SKILL.md).
 2. Read [`docs/MIGRATION_PROBLEMS.md`](docs/MIGRATION_PROBLEMS.md) for the observed failure catalog.
 3. Read [`docs/CORE_ARTIFACTS.md`](docs/CORE_ARTIFACTS.md) for the Odoo 19 → 20 artifact implications.
-4. Read [`docs/MIGRATION_MAPPINGS.md`](docs/MIGRATION_MAPPINGS.md) before changing models or data.
-5. Follow [`docs/STATIC_FIRST_PROCEDURE.md`](docs/STATIC_FIRST_PROCEDURE.md).
-6. Run the read-only scanners before the first Odoo 20 install attempt.
+4. Read [`docs/BEFORE_AFTER_EXAMPLES.md`](docs/BEFORE_AFTER_EXAMPLES.md) for concrete code and XML changes.
+5. Read [`docs/MIGRATION_MAPPINGS.md`](docs/MIGRATION_MAPPINGS.md) before changing models or data.
+6. Follow [`docs/STATIC_FIRST_PROCEDURE.md`](docs/STATIC_FIRST_PROCEDURE.md).
+7. Run the read-only scanners before the first Odoo 20 install attempt.
 
 The core-artifact report is intentionally limited to reusable Odoo 19 → 20 technical changes. Project- or
 customer-specific implementation names are excluded from the public report for data protection.
