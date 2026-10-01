@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+*.log
+*.dump
+*.sql.gz
+*.tar.gz
+.env
+.venv/
+test-results/
+screenshots/
