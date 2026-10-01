@@ -76,11 +76,14 @@ phase gates and release rehearsals.
 
 ## Silent ORM and schema problems
 
-### 8. `_sql_constraints` silently stopped creating constraints
+### 8. Legacy `_sql_constraints` declarations do not create the intended constraint
 
-**Problem:** Odoo 20 logged a warning but loaded the module without the intended database constraint.
+**Problem:** The current Odoo 19 and Odoo 20 ORM both warn that `_sql_constraints` is unsupported. A legacy
+custom declaration can therefore be present before the port and still leave the database without the intended
+constraint; this is not a new Odoo 20-only API change.
 
 **Solution:** Replace declarations with `models.Constraint` and verify PostgreSQL `pg_constraint` directly.
+Label the work as legacy cleanup discovered during migration, not as a universal 19-to-20 mapping.
 
 **Proof:** Constraint query, duplicate-value test, and clean upgrade log.
 

@@ -7,7 +7,8 @@ examples, not drop-in replacements: confirm the exact Odoo 20 signature, import,
 the target source.
 
 The important lesson is that a replacement string is not a migration proof. Every example ends with the
-check that should be performed after the code or data change.
+check that should be performed after the code or data change. The source-anchored comparison behind these
+examples is [`REAL_CODE_COMPARISON.md`](REAL_CODE_COMPARISON.md).
 
 ## 1. SQL constraints
 
@@ -24,7 +25,7 @@ class CatalogItem(models.Model):
     ]
 ```
 
-### Odoo 20 target pattern
+### Odoo 20 target pattern (supported in both current Odoo 19 and Odoo 20)
 
 ```python
 class CatalogItem(models.Model):
@@ -40,9 +41,10 @@ class CatalogItem(models.Model):
 
 ### Why this is not only a rename
 
-An old declaration may be accepted with a warning while the PostgreSQL constraint is absent. After the
-upgrade, query `pg_constraint` and attempt a duplicate create/write in a disposable database. A clean
-registry log alone is insufficient.
+The current Odoo 19 and Odoo 20 ORM both warn that `_sql_constraints` is unsupported. This is a legacy
+custom-code cleanup that may be discovered during a 19→20 port, not a new Odoo 20-only rename. Query
+`pg_constraint` and attempt a duplicate create/write in a disposable database. A clean registry log alone is
+insufficient.
 
 ## 2. SQL-backed or report models
 
@@ -84,14 +86,15 @@ class ItemSummary(models.Model):
     @property
     def _table_sql(self):
         return SQL(
-            """
+            """(
                 SELECT item.id AS id,
                        item.id AS item_id,
                        COUNT(line.id) AS total
                   FROM training_catalog_item item
                   LEFT JOIN training_item_line line ON line.item_id = item.id
                  GROUP BY item.id
-            """
+            )""",
+            to_flush=super()._table_sql._sql_tuple[2],
         )
 ```
 
@@ -118,22 +121,15 @@ access_item_user,item user,model_training_catalog_item,base.group_user,1,1,1,0
 Odoo 20 represents access as operation rows. The source-to-target mapping must preserve the effective
 permission and domain, rather than mechanically copying the old CSV columns:
 
-```xml
-<record id="access_item_user_read" model="ir.access">
-    <field name="model_id" ref="model_training_catalog_item"/>
-    <field name="group_id" ref="base.group_user"/>
-    <field name="permission">r</field>
-</record>
-<record id="access_item_user_write" model="ir.access">
-    <field name="model_id" ref="model_training_catalog_item"/>
-    <field name="group_id" ref="base.group_user"/>
-    <field name="permission">u</field>
-</record>
+```csv
+id,name,model_id,group_id/id,operation,domain
+access_item_user,training item user,training.catalog.item,base.group_user,crud,
+access_item_user_read_active,training item active read,training.catalog.item,base.group_user,r,"[('active', '=', True)]"
 ```
 
-The exact target data format must be checked in the installed Odoo 20 security model. A grouped Odoo 19
-record rule can be restrictive while a naïve target permission row is permissive. Map each rule as either a
-permission or a restriction and test with a non-administrator user.
+This is the Odoo 20 CSV shape used by the target source. A grouped Odoo 19 record rule can be restrictive
+while a naïve target permission row is permissive. Map each rule as either a permission or a restriction and
+test with a non-administrator user. The target model is `ir.access`; do not invent a `permission` field.
 
 ### Proof
 

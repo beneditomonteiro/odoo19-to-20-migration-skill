@@ -20,9 +20,11 @@ with values from your own controlled environment.
 2. Read [`docs/MIGRATION_PROBLEMS.md`](docs/MIGRATION_PROBLEMS.md) for the observed failure catalog.
 3. Read [`docs/CORE_ARTIFACTS.md`](docs/CORE_ARTIFACTS.md) for the Odoo 19 → 20 artifact implications.
 4. Read [`docs/BEFORE_AFTER_EXAMPLES.md`](docs/BEFORE_AFTER_EXAMPLES.md) for concrete code and XML changes.
-5. Read [`docs/MIGRATION_MAPPINGS.md`](docs/MIGRATION_MAPPINGS.md) before changing models or data.
-6. Follow [`docs/STATIC_FIRST_PROCEDURE.md`](docs/STATIC_FIRST_PROCEDURE.md).
-7. Run the read-only scanners before the first Odoo 20 install attempt.
+5. Read [`docs/REAL_CODE_COMPARISON.md`](docs/REAL_CODE_COMPARISON.md) for source-anchored Odoo 19 → 20
+   code, runtime, database, and browser effects.
+6. Read [`docs/MIGRATION_MAPPINGS.md`](docs/MIGRATION_MAPPINGS.md) before changing models or data.
+7. Follow [`docs/STATIC_FIRST_PROCEDURE.md`](docs/STATIC_FIRST_PROCEDURE.md).
+8. Run the read-only scanners before the first Odoo 20 install attempt.
 
 The core-artifact report is intentionally limited to reusable Odoo 19 → 20 technical changes. Project- or
 customer-specific implementation names are excluded from the public report for data protection.
@@ -40,6 +42,6 @@ customer-specific implementation names are excluded from the public report for d
 
 ## Scope and license
 
-The documentation is offered for community reuse. Choose and add a project license before publishing
-the repository; the original Odoo modules, Enterprise code, OCA code, and customer-specific code retain
-their own licenses.
+The original documentation and scripts in this repository are released under the [MIT License](LICENSE).
+That license does not relicense Odoo, Odoo Enterprise, OCA, or customer-specific code copied into a user's
+own migration workspace; those components retain their own licenses and copyright notices.

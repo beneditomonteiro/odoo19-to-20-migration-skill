@@ -16,10 +16,10 @@ The following patterns require explicit review:
 
 | Odoo 19 pattern | Odoo 20 treatment | Proof required |
 |---|---|---|
-| `_sql_constraints` | `models.Constraint` | `pg_constraint` query |
+| legacy `_sql_constraints` | `models.Constraint` (supported in current Odoo 19 and Odoo 20) | `pg_constraint` query |
 | `_table_query` | `_table_sql` with Odoo 20 SQL/query objects | registry + report output |
-| `attrs=` / `states=` | inline expressions | clean view load + browser |
-| `<tree>` | `<list>` | clean view load |
+| server-view `attrs=` / `states=` | inline expressions where required; classify Owl HTML attributes separately | clean view load + browser |
+| legacy server-view `<tree>` | `<list>` where required; do not treat as a blanket 19→20 conversion | clean view load |
 | `t-esc` / `t-raw` | `t-out` | rendered output |
 | `get_param` / `set_param` | typed getters/setters | type-specific behavior |
 | `ir.attachment.datas` | `raw` / `BinaryValue.content` | upload/download test |

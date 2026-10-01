@@ -7,9 +7,9 @@ field semantics, XML IDs, business meaning, and existing data before applying it
 
 | Odoo 19 | Odoo 20 | Treatment |
 |---|---|---|
-| `ir.model.access` | `ir.access` | Convert model permissions to operation strings `c/r/u/d`; move XML IDs. |
-| `ir.rule` with groups | `ir.access` permission rows | Create one row per group and preserve the domain. |
-| Global `ir.rule` | group-less `ir.access` restriction | Preserve restrictive semantics; review rule unions manually. |
+| `ir.model.access` | `ir.access` | Convert the old `perm_*` CSV columns to target `operation`/`domain` data; move XML IDs. |
+| `ir.rule` with groups | reviewed `ir.access` permission/restriction rows | Preserve the domain and decide whether the target row grants or restricts access; do not assume one row is equivalent. |
+| Global `ir.rule` | reviewed group-less `ir.access` restriction | Preserve restrictive semantics; review rule unions manually. |
 | `ir.model.fields.index = true` | `btree` | Normalize before registry setup. |
 | `ir.model.fields.index = false/''` | `NULL` | Normalize before registry setup. |
 | `base.state_in_or` | `base.state_in_od` | Relink the existing state record to avoid duplicate country/code data. |
@@ -28,7 +28,7 @@ field semantics, XML IDs, business meaning, and existing data before applying it
 
 | Odoo 19 | Odoo 20 | Resolution |
 |---|---|---|
-| `_sql_constraints` | `models.Constraint` | Rewrite and verify the actual PostgreSQL constraint. |
+| `_sql_constraints` in legacy custom code | `models.Constraint` | This is already the supported form in current Odoo 19 and Odoo 20; convert the legacy declaration and verify `pg_constraint`, but do not call it a new 19→20 release mapping. |
 | `_table_query` | `_table_sql` | Rebuild using current Odoo 20 SQL/query APIs. |
 | `from odoo.tools import Query` | `from odoo.models import Query` | Update import. |
 | `odoo.http.content_disposition` | `odoo.http.stream.content_disposition` | Update import. |

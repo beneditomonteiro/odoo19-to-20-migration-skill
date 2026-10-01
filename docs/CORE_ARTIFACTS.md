@@ -2,17 +2,18 @@
 
 This report intentionally excludes project-specific module names, customer data, and organization-specific
 bugs. It describes the core artifacts that a migration must inspect: source declarations, database metadata,
-XML/data records, frontend assets, and runtime behavior.
+XML/data records, frontend assets, and runtime behavior. For source-anchored before/after code and visible
+effects, read [`REAL_CODE_COMPARISON.md`](REAL_CODE_COMPARISON.md).
 
 The key rule is that an artifact can remain syntactically valid while its meaning changes. Every row below
 therefore includes a migration implication and a proof, not only a replacement string.
 
 | Core artifact | Odoo 19 | Odoo 20 | Migration implication and proof |
 |---|---|---|---|
-| Database constraints | `_sql_constraints` model declaration | `models.Constraint` | Rewrite declarations; query `pg_constraint`; test duplicate data. |
-| Virtual SQL models | `_table_query` | `_table_sql` using current SQL/query objects | Rebuild report/reconciliation queries; verify columns and rendered output. |
-| Model access | `ir.model.access` | `ir.access` | Convert permissions to `c/r/u/d`; move XML IDs; compare effective rights. |
-| Record rules | `ir.rule` with grouped/global semantics | `ir.access` permission/restriction rows | Decide per rule whether it is a permission or restriction; test non-admin visibility. |
+| SQL constraints | Legacy `_sql_constraints` declaration is already warned against in current Odoo 19 | `models.Constraint`, also the supported Odoo 20 form | Treat as legacy debt rather than a new release delta; query `pg_constraint`; test duplicate data. |
+| Virtual SQL models | `_table_query`; Odoo 19 base `_table_sql` wraps it | `_table_sql` using current `SQL`/`Query`/`TableSQL` objects | Rebuild report/reconciliation queries; verify columns, flush dependencies, and rendered output. |
+| Model access | `ir.model.access` with `perm_*` CSV columns | `ir.access` with `operation` and optional `domain` | Convert security data; move XML IDs; compare effective rights and restrictions. |
+| Record rules | `ir.rule` grouped/global semantics | Review against Odoo 20 `ir.access` permission/restriction semantics | Do not mechanically merge rules; preserve restrictive behavior and test non-admin visibility. |
 | Field indexes | `true` / `false` strings | `btree`, `btree_not_null`, `trigram`, or `NULL` | Normalize stored metadata before registry setup. |
 | Contract type model | `hr.contract.type` | `hr.employee.type` | Migrate table, metadata, relations, XML-ID model values, and foreign-key columns. |
 | Leave type model | `hr.leave.type` | Role represented by `hr.work.entry.type` | Create an explicit data/XML-ID mapping; do not use a global text replacement. |
@@ -25,8 +26,8 @@ therefore includes a migration implication and a proof, not only a replacement s
 | Report formulas | More permissive domain parsing | Stricter literal parsing | Remove trailing whitespace and validate every multi-line formula before loading. |
 | Report file naming | `ir.actions.report.report_file` available | Removed or redundant with `report_name` | Delete only after confirming equivalent `report_name` behavior. |
 | View inheritance | Old parent links and stale combined arches may survive | Whole view tree validated at load | Classify views as keep, park, recreate, or delete; run a second validation. |
-| View modifiers | `attrs=` and `states=` | Inline Python expressions | Convert and validate each view against the current model fields. |
-| List views | `<tree>` | `<list>` | Convert tags and verify list behavior in the browser. |
+| View modifiers | Legacy/custom `attrs=` and `states=` may still be present | Target parser and inline expressions where required | Classify server-view modifiers separately from Owl HTML attributes; validate each view against current fields. |
+| List views | Odoo 19 core already uses many `<list>` views; legacy `<tree>` can remain in custom code | Odoo 20 still has isolated legacy occurrences | Convert only parser-relevant hits and verify list behavior in the browser; do not claim a blanket 19→20 change. |
 | Kanban templates | `kanban-box` | `card` | Update templates and run a browser smoke test. |
 | Object buttons | Button names sometimes resolved late | Method existence validated against the model | Check every `type="object"`; replace removed archive helpers. |
 | QWeb escaping | `t-esc`, `t-raw` | `t-out` | Convert directives and render text, HTML, reports, and emails. |

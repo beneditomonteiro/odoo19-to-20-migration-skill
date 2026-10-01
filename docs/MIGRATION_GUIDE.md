@@ -63,15 +63,19 @@ Build one inventory covering the following artifact classes:
 For each item record source owner, target owner, disposition, dependency, migration action, and proof. A
 module rename is not enough: models, tables, XML IDs, security, assets, and data may have different owners.
 Use [`MIGRATION_MAPPINGS.md`](MIGRATION_MAPPINGS.md) for the mapping fields and disposition rules.
+Use [`REAL_CODE_COMPARISON.md`](REAL_CODE_COMPARISON.md) when a mapping needs source evidence and a
+browser/database effect, rather than relying on a textual replacement.
 
 ## 4. Odoo 19 → Odoo 20 artifact work
 
 ### 4.1 ORM and PostgreSQL metadata
 
-Review `_sql_constraints`, `_table_query`, field indexes, renamed models, removed fields, related fields,
-computed fields, and all direct SQL. The important transitions include:
+Review legacy `_sql_constraints`, `_table_query`, field indexes, renamed models, removed fields, related
+fields, computed fields, and all direct SQL. The important transitions include:
 
-- `_sql_constraints` declarations become `models.Constraint`; confirm the real constraint in `pg_constraint`;
+- legacy `_sql_constraints` declarations should be converted to `models.Constraint`; current Odoo 19 and
+  Odoo 20 both warn against the old declaration, so treat this as debt discovered during migration rather
+  than a new Odoo 20-only release mapping; confirm the real constraint in `pg_constraint`;
 - `_table_query` report models become the Odoo 20 SQL/query form; verify every selected column and alias;
 - field index metadata uses current index values rather than the old boolean-string representation;
 - removed or renamed models require explicit table, relation, metadata, and XML-ID treatment;
@@ -84,7 +88,8 @@ data where the constraint matters.
 ### 4.2 XML IDs, data, access, and record rules
 
 Odoo 20 may move a record to another module, rename an XML ID, tighten uniqueness, or represent access and
-record-rule behavior differently. For each affected record:
+record-rule behavior differently. The target security data uses `ir.access` rows with `operation` and an
+optional `domain`; map the effective behavior rather than copying old ACL columns. For each affected record:
 
 1. identify the old XML ID and database row;
 2. identify the unique target definition, if one exists;
@@ -98,10 +103,11 @@ custom ownership. Never delete ambiguous records automatically.
 
 ### 4.3 Views, QWeb, and reports
 
-Convert old view contracts before installation:
+Convert old view contracts before installation, but classify each hit by the parser that consumes it:
 
-- `attrs=` and `states=` become inline Python expressions;
-- `<tree>` becomes `<list>`;
+- server-view `attrs=` and `states=` may need inline Python expressions;
+- legacy server-view `<tree>` may need `<list>`;
+- do not mechanically convert `attrs=` in Owl HTML or claim `<tree>` is a universal Odoo 19→20 change;
 - `kanban-box` becomes `card` where required;
 - `t-esc` and `t-raw` become the current escaping/output form;
 - stale inherited views are classified as keep, park, recreate, or remove;

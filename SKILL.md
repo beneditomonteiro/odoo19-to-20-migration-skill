@@ -2,7 +2,7 @@
 name: odoo20-migration-process
 description: >-
   Port Odoo 19 custom modules to Odoo 20 (Owl 3, new account-reports frontend, SQL/`_table_query`
-  removal, `_sql_constraints` to `models.Constraint`, `hr.leave.type` removal, BinaryValue, XML
+  removal, legacy `_sql_constraints` cleanup, `hr.leave.type` removal, BinaryValue, XML
   modifiers, POS patches, assets/manifests) safely and in phases, on a disposable Odoo 20 database.
   Use when asked to migrate or port a module to Odoo 20, to make custom Odoo or OCA modules work on
   Odoo 20, to pick or sanitize a reference database for a
@@ -26,6 +26,8 @@ Two bundled references, read in this order:
    gates. Every code skeleton in it is unverified — check it against the local Odoo 20 source before use.
 3. `docs/BEFORE_AFTER_EXAMPLES.md` — side-by-side generic Odoo 19 and Odoo 20 snippets for teaching or
    reviewing a concrete port. Treat every snippet as a skeleton and verify it against the target source.
+4. `docs/REAL_CODE_COMPARISON.md` — source-anchored comparisons with concrete database, server, and browser
+   effects. Use it to separate confirmed Odoo 19→20 changes from legacy patterns found in both releases.
 
 Static scan: `scripts/scan_odoo19_patterns.sh <addons-root>` (read-only, needs `rg`); per-module rule counts:
 `scripts/static_audit20.sh`; import resolver: `scripts/check_imports20.py`; staged official scripts:
@@ -95,7 +97,7 @@ Static scan: `scripts/scan_odoo19_patterns.sh <addons-root>` (read-only, needs `
 | Topic / symptom | Guide § | Lines | First action |
 |---|---|---|---|
 | Scope and inventory | 1-3 | — | Build the module, model, XML-ID, security, asset, and dependency inventory from the source |
-| Concrete source/target examples | separate reference | — | Read `docs/BEFORE_AFTER_EXAMPLES.md` before teaching or reviewing a code change |
+| Concrete source/target examples | separate reference | — | Read `docs/BEFORE_AFTER_EXAMPLES.md` and `docs/REAL_CODE_COMPARISON.md` before teaching or reviewing a code change |
 | ORM, schema, database metadata | 4.1 | — | Rewrite declarations and prove columns, constraints, indexes, and ownership |
 | XML/data, views, QWeb | 4.2-4.3 | — | Convert metadata and validate the complete view/data graph |
 | Owl, account reports, POS, assets | 4.4 | — | Rebase frontend behavior on Odoo 20 source and browser-test it |
@@ -137,10 +139,10 @@ that this list glosses over as "back up source DB + filestore."
 Full detail and working code in `docs/MIGRATION_PROBLEMS.md`; the
 headline points, so you recognize the symptom immediately:
 
-- **`_sql_constraints` is a silent-failure API, not a removed one.** Odoo 20 logs a warning and keeps
-  loading, but the database constraint is never created — duplicate rows slip through with nothing
-  in the log pointing at it. Port to `models.Constraint` (findings §2 has the working pattern) and
-  then *prove* the constraint exists in `pg_constraint`; don't trust a clean exit code.
+- **`_sql_constraints` is legacy debt in both current source trees, not a new Odoo 20-only change.**
+  Odoo 19 and Odoo 20 both warn that the attribute is unsupported and point to `models.Constraint`.
+  Convert any remaining custom declaration and *prove* the PostgreSQL constraint exists in `pg_constraint`;
+  do not describe this as a release-only mapping.
 - **`_table_query` -> `_table_sql`.** A pure placeholder virtual model (e.g. a reconciliation widget)
   becomes `_table_sql = SQL("(0)")`; a real backing query needs Odoo 20's `SQL`/query objects built
   from the actual target table, not guessed from the Odoo 19 shape.
