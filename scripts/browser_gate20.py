@@ -1,6 +1,6 @@
-"""Browser gate for the MaxAML chain on Odoo 20.
+"""Browser gate for migrated Odoo 20 actions.
 
-Opens every act_window / client action owned by the chain modules as a real user, waits for the view,
+Opens every act_window / client action supplied by the caller as a real user, waits for the view,
 optionally opens the "New" form, and records error dialogs, JS errors and console errors.
 
 Usage: odoo20_browser_gate.py BASE DB LOGIN PASSWORD [OUTDIR]

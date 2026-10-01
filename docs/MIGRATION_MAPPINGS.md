@@ -71,31 +71,20 @@ field semantics, XML IDs, business meaning, and existing data before applying it
 | Old account-report jQuery widget | Owl `AccountReport`/controller components | Rebuild the component lifecycle, not just imports. |
 | Old POS payment patch hooks | Current order-push lifecycle | Rebase on Odoo 20 POS source and test offline/retry/multi-order cases. |
 
-## Custom-module correspondence used by the reference port
+## Module mapping rules
 
-The reference localization had two different relationships: CE was mostly a rename-fork, while CTB was
-an architectural rewrite. The names below are examples of the correspondence that must be recorded rather
-than inferred:
+Module names are evidence, not a migration plan. A source module may be renamed, split, merged into a
+foundation module, replaced by standard Odoo functionality, or deliberately deferred. Record the mapping
+explicitly rather than inferring it from a similar name.
 
-| Source module | CE target | CTB target(s) |
-|---|---|---|
-| `l10n_ao` | `l10n_ao_ce` | `l10n_ao` |
-| `l10n_ao_complete` | `l10n_ao_ce_complete` | `l10n_ao_complete_ctb` |
-| `l10n_ao_stocks` field extension | merged into CE stocks | `maxdoo_ao_inventory_base` |
-| `max_3panel_reconciliation` | `max_ce_3panel_reconciliation` | same name |
-| `max_agt_prospector` | `max_ce_agt_prospector` | same name |
-| `max_l10n_ao_account_asset` | CE equivalent | `maxdoo_ao_fixed_assets_base`, `maxdoo_ao_fixed_assets` |
-| `max_l10n_ao_account_iva` | CE equivalent | absorbed into `l10n_ao` |
-| `max_l10n_ao_dashboards` | CE equivalent | same name |
-| `max_l10n_ao_erc_intercompany_bridge` | CE equivalent | same name |
-| `max_l10n_ao_hr` | CE equivalent | `maxdoorh_ao_hr_base`, `_absences`, `_payroll` |
-| `max_l10n_ao_hr_holidays` | CE equivalent | `maxdoorh_ao_hr_absences` |
-| `max_l10n_ao_partner_base` | CE equivalent | same name |
-| `max_l10n_ao_payroll_plus` | CE equivalent | `maxdoorh_ao_hr_payroll_plus` |
-| `max_l10n_ao_pos` | CE equivalent | same name |
-| `max_l10n_ao_report` | CE equivalent | `maxdoo_ao_fixed_assets`, `l10n_ao` |
-| `max_l10n_ao_sale` | CE equivalent | `maxdoo_ao_revenues_base`, `maxdoo_ao_revenues` |
-| `max_l10n_ao_stocks` | CE equivalent | `maxdoo_ao_inventory_base`, `maxdoo_ao_inventory` |
+For every source module, record:
 
-The two stock rows are intentionally different: one tracks a field-level legacy extension and the other
-tracks the full picking rewrite. Document ownership explicitly to prevent double migration.
+- one or more target modules, or the explicit disposition `absorbed`, `replaced`, `deferred`, or `removed`;
+- source and target manifest versions and dependencies;
+- model, table, field, XML-ID, security, and asset ownership;
+- the data migration needed when ownership changes;
+- the installation, upgrade, schema, and browser proof for the target.
+
+If a source module is split, map each model and XML-ID separately. If two source modules merge, identify the
+single owner of each table, field, view, action, and data record so that the migration does not duplicate or
+delete records. The public register intentionally omits project-specific module names.

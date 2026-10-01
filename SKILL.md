@@ -2,11 +2,11 @@
 name: odoo20-migration-process
 description: >-
   Port Odoo 19 custom modules to Odoo 20 (Owl 3, new account-reports frontend, SQL/`_table_query`
-  removal, `_sql_constraints` -> `models.Constraint`, `hr.leave.type` removal, BinaryValue, XML
+  removal, `_sql_constraints` to `models.Constraint`, `hr.leave.type` removal, BinaryValue, XML
   modifiers, POS patches, assets/manifests) safely and in phases, on a disposable Odoo 20 database.
-  Use when asked to "migrate/port <module> to Odoo 20", to make custom Odoo or OCA modules work on
+  Use when asked to migrate or port a module to Odoo 20, to make custom Odoo or OCA modules work on
   Odoo 20, to pick or sanitize a reference database for a
-  migration, to run `upgrade_code` / the Owl 3 migration, to review a 19->20 diff, to debug an Odoo
+  migration, to run `upgrade_code` / the Owl 3 migration, to review a 19-to-20 diff, to debug an Odoo
   20 module that installs but silently drops a constraint or field, or to plan/estimate an Odoo 20
   migration. Bundles both a static, unexecuted assessment (guide) and the write-up of a real,
   largely-successful executed migration attempt (findings) with concrete code, gates, and lessons —
@@ -21,12 +21,9 @@ Two bundled references, read in this order:
    here. It has a table of contents; jump to the section that matches the symptom you're looking at.
    It wins over the guide below wherever they conflict, because it's what actually happened, not an
    assessment.
-2. `docs/MIGRATION_GUIDE.md` (866 lines, 2026-09-25) — the static, unexecuted assessment
-   this project started from. Still useful for topics the executed findings don't cover (Owl 2->3
-   mechanics, POS PaymentScreen, assets). Read a section with
-   `sed -n '<from>,<to>p' docs/MIGRATION_GUIDE.md` (line ranges in
-   the mapping table below). Every code skeleton in it is unverified — check it against the local
-   Odoo 20 source before use.
+2. `docs/MIGRATION_GUIDE.md` — the public core-artifact migration guide. It covers the static, unexecuted
+   assessment: ORM/schema, database metadata, XML/data, views/QWeb, Owl/frontend, POS, assets, and proof
+   gates. Every code skeleton in it is unverified — check it against the local Odoo 20 source before use.
 
 Static scan: `scripts/scan_odoo19_patterns.sh <addons-root>` (read-only, needs `rg`); per-module rule counts:
 `scripts/static_audit20.sh`; import resolver: `scripts/check_imports20.py`; staged official scripts:
@@ -44,26 +41,17 @@ Static scan: `scripts/scan_odoo19_patterns.sh <addons-root>` (read-only, needs `
    reference totals recorded before any source edit).
 1. Read the deployment map for the environment first. **Never test a migration first on production, a cloud
    instance or a customer database**. Keep environment-specific rules outside this public skill.
-2. **Odoo 20 runs only on its own stack.** Code: `$ODOO20_ROOT/odoo` (20.0, see memory for the pinned
-   commit); Enterprise: `$ODOO20_ROOT/enterprise20_0924` (zip beside it); venv `$ODOO20_ROOT/venv`; config
-   `$ODOO20_CONFIG`; PostgreSQL cluster **`18/odoo20` on port 5439** (`sudo pg_ctlcluster 18 odoo20 start`,
-   put it back to stopped afterwards). **Never point Odoo 20 code at LOCAL_EE (9099/5437) or LOCAL_CE
-   (8099/5438), and never open an Odoo 19 database with Odoo 20 without the upgrade path** - restore a *copy*
-   into the 5439 cluster (guide phase 7). Use `PGPASSWORD=... psql` (a bare `psql` waits for a password).
-3. **Do not port in place** in `$ODOO19_ROOT/maxdoo_ao` (other sessions use it). Work on your own branch
-   `session-<model>-<YYYYMMDD>-<topic>`, in a copy under the Odoo 20 side (`$ODOO20_ROOT/maxdoo_ao_20`,
-   `$ODOO20_ROOT/maxdoo_ce_ao_20`, `$ODOO20_ROOT/maxdooctb_ao_20` — see rule 4 below) or in
-   `$ODOO19_ROOT/oca_migrated_20/<OCA-repo>/<module>` for OCA ports. Commit only your files by path and
+2. **Odoo 20 runs only on its own stack.** Code, Enterprise addons, virtual environment, config,
+   PostgreSQL cluster, HTTP port, filestore, and migrated databases must be isolated from Odoo 19.
+   Restore a *copy* into the Odoo 20 cluster; never open an Odoo 19 database directly with Odoo 20.
+   Use a protected password source for database commands (a bare `psql` may wait for a password).
+3. **Do not port in place** in a shared Odoo 19 source tree. Work on your own branch
+   `session-<model>-<YYYYMMDD>-<topic>`, in a dedicated Odoo 20 copy or worktree. Commit only your files by path and
    open the PR, then **stop and ask before merging** (merge only when the user asked for it), and stay
    on your branch afterwards; never touch another session's work.
-4. **Every ported module's local directory (and its eventual GitHub repo) gets a `_20` suffix on the
-   Odoo 19 repo name** (`maxdoo_ao` -> `maxdoo_ao_20`, `maxdoo_ce_ao` -> `maxdoo_ce_ao_20`,
-   `maxdooctb_ao` -> `maxdooctb_ao_20`), decided 2026-09-28. Reason: the Odoo 19 repos of the same
-   name already exist on GitHub, and a repo name must be unique per owner — without the suffix, the
-   Odoo 20 port has nowhere to go once it's ready to be pushed. This is a **repo/directory naming
-   convention only** — the Odoo *module* technical names inside (`l10n_ao`, `max_l10n_ao_partner_base`,
-   etc.) stay exactly as they were at Odoo 19, unchanged, for upgrade-path and cross-reference
-   continuity. Only the top-level container gets the suffix.
+4. Give the ported source tree and its eventual repository an unmistakable Odoo 20 name, such as
+   `<project>_odoo20`. Keep technical module names stable when the upgrade path depends on them;
+   the container/repository name and the module technical name are separate decisions.
 5. **Schema is a release gate:** after any field change run `-u MODULE -d DB --stop-after-init`, verify the
    columns in `information_schema.columns`, `Modules loaded`/`Registry loaded`, no `UndefinedColumn`, and
    check that the module reached `installed` (an exit code 0 can hide skipped modules).
@@ -73,13 +61,11 @@ Static scan: `scripts/scan_odoo19_patterns.sh <addons-root>` (read-only, needs `
 7. Access-control default for new modules (privilege with User/Manager/Administrator roles) still applies to
    any *new* model/menu added during a port. Keep LGPL/OCA copyright headers when porting third-party code.
 8. **Before hand-deriving a fix for any newly-hit Odoo 20 incompatibility, check in this order — don't
-   write a bespoke fix first and check references later.** This was the exact mistake caught mid-session
-   porting `maxdooctb_ao`; findings §13 has the full story and the working examples.
-   1. **Diff the Odoo 19 source against `maxdoo_ao`'s (and any other already-ported sibling repo's)
-      equivalent module** (`diff -rq --exclude=__pycache__ <repo19>/<module> <other-repo19>/<module>`)
-      *before* assuming the module needs independent porting work — some modules turn out
-      byte-identical across forks even when the repos' overall relationship is "independent rewrite."
-   2. **If a sibling fork already has an Odoo 20 "port" of the same file, verify it actually works
+   write a bespoke fix first and check references later.**
+   1. **Diff the Odoo 19 source against any already-ported sibling implementation**
+      (`diff -rq --exclude=__pycache__ <repo19>/<module> <sibling>/<module>`)
+      before assuming independent porting work is needed.
+   2. **If a sibling tree already has an Odoo 20 "port" of the same file, verify it actually works
       before trusting it** — a registry-load test never executes JS/Owl templates, so a sibling's port
       can look done (clean install) while still being browser-broken (findings §13 point 2 has a real
       example: static `props`/`useState`/`useRef` that don't exist in this build's vendored Owl at all).
@@ -106,22 +92,13 @@ Static scan: `scripts/scan_odoo19_patterns.sh <addons-root>` (read-only, needs `
 
 | Topic / symptom | Guide § | Lines | First action |
 |---|---|---|---|
-| Scope, risk headline, module inventory and dependency layers, compatibility table | 1-4 | 1-107 | Build the module inventory from manifests; do not trust the layer list as a full dependency graph |
-| Owl 2 -> Owl 3 (static props, `useEffect` deps, `t-model`, `t-portal`, directives) | 5 | 108-219 | Run the scan; replace class `static props` with `useProps`; effects read reactive state |
-| Account reports frontend (`odoo.define`, `accountReportsWidget.extend`, jQuery) | 6 | 220-303 | Rewrite on `AccountReport`/`AccountReportController` custom components; never only change imports |
-| POS patches (`PaymentScreen._postPushOrderResolve`, `pos.data.call`) | 7 | 304-354 | Read the Odoo 20 order-push lifecycle first; test offline/retry/multi-ID |
-| SQL reports, `_table_query` removed | 8 | 355-391 | Rebuild with `SQL`/`TableSQL`/`Domain` like Odoo 20 `sale/report/sale_report.py`; validate columns |
-| XML `attrs=`/`states=`, `<tree>` -> `<list>`, icons | 9 | 392-456 | Convert to inline expressions, validate each view on a clean DB, check icons in a browser |
-| Binary fields / attachments (`BinaryValue`) | 10 | 457-503 | Review every upload/export/controller; test bytes, base64, RPC and download separately |
-| ORM/server API review (`_cr`/`_context`/`_uid`, `name_get`, `read_group`, `sudo`) | 11 | 504-532 | Static scan + functional review; scope every `sudo()` |
-| Enterprise 19 vs 20 concrete changes (payment patch, sale report, translations) | 12 | 533-580 | Rebase each patch on the Odoo 20 owner class; never merge old files wholesale |
-| Assets and manifests | 13 | 581-610 | Rebuild asset declarations from real Odoo 20 files; asset debug + clean browser |
-| The phased plan (phases 0-8) | 14 | 611-755 | Follow the phases below |
-| Commands (install, upgrade, tests, static scan, schema SQL) | 15 | 756-813 | Adapt to `$ODOO20_CONFIG` and the 5439 cluster |
-| Risk register | 16 | 814-828 | Use as the review checklist in the PR |
-| Definition of done | 17 | 829-848 | Acceptance criteria before any release proposal |
-| Official references | 18 | 849-860 | Odoo 20 docs and the local Owl 3 bridge/account_reports files |
-| Final recommendation | 19 | 861-866 | Port `l10n_ao` and shared models first; rebuild report + reconciliation frontend next |
+| Scope and inventory | 1-3 | — | Build the module, model, XML-ID, security, asset, and dependency inventory from the source |
+| ORM, schema, database metadata | 4.1 | — | Rewrite declarations and prove columns, constraints, indexes, and ownership |
+| XML/data, views, QWeb | 4.2-4.3 | — | Convert metadata and validate the complete view/data graph |
+| Owl, account reports, POS, assets | 4.4 | — | Rebase frontend behavior on Odoo 20 source and browser-test it |
+| Binary values and configuration | 4.5 | — | Verify bytes, filestore, typed parameters, cache, and live configuration |
+| Static-first phases and commands | 5-6 | — | Complete source and disposable-database gates before release consideration |
+| Definition of done | 7 | — | Use the proof checklist in the review |
 
 ## 2. The process (guide 14), condensed
 
@@ -134,17 +111,17 @@ that this list glosses over as "back up source DB + filestore."
 1. **Static inventory** - run `scripts/scan_odoo19_patterns.sh <root>`; classify each hit (JS module system,
    Owl 2, XML modifier, SQL/report, ORM, security, data migration, integration, performance); assign owner + test.
    Comments/docs/tests are false positives only after manual verification.
-2. **Localization foundation** - `l10n_ao` (data, taxes, fiscal positions, journals, sequences), then
-   `l10n_ao_complete` only when the base works. Verify posting, credit notes, refunds, reports, multi-company, translations.
-3. **Shared models** - `max_l10n_ao_partner_base`, mixins, access rules, views/menus, server and scheduled
-   actions. Settle field renames, computes, constraints, groups *before* the big frontend work.
-4. **Accounting and reporting** - `max_l10n_ao_report`, asset, IVA, dashboards, `max_3panel_reconciliation`;
-   rewrite the report frontend and `_table_query` models; compare totals with a fixed Odoo 19 reference dataset.
+2. **Localization/foundation modules** - data, taxes, fiscal positions, journals, and sequences; verify
+   posting, credit notes, refunds, reports, multi-company, and translations.
+3. **Shared models** - partner/company extensions, mixins, access rules, views/menus, server and scheduled
+   actions. Settle field renames, computes, constraints, and groups before frontend work.
+4. **Accounting and reporting** - reports, assets, reconciliation, and financial data; rewrite the report
+   frontend and `_table_query` models; compare totals with a fixed Odoo 19 reference dataset.
 5. **Sales, stock, HR, payroll** - test workflows end to end (quotation -> delivery -> invoice -> credit note,
    valuation, time off, payslip, generated entries), not just installation.
 6. **POS and integrations** - last: open/close, offline, payment retry, fiscal info, sync, duplicates, timeouts,
    secrets. (signing keys are not in the repo; never commit or move them.)
-7. **Database migration** - only after clean installs: restore a *copy* into the 5439 cluster, run the supported
+7. **Database migration** - only after clean installs: restore a *copy* into the isolated Odoo 20 cluster, run the supported
    upgrade path, upgrade custom modules, inspect changed columns, reconcile against Odoo 19 exports, test
    filestore/binaries, repeat on a fresh copy until deterministic.
 8. **Acceptance and release** - install from empty DB, upgrade from migrated DB, Python + JS tests, browser tours,
@@ -152,7 +129,7 @@ that this list glosses over as "back up source DB + filestore."
    log review with no unexplained traceback; then the guide's definition of done (17). Production only with the
    owner's explicit go and a rehearsal on a production backup.
 
-## 3. Verified facts from the Maxdoo AO executed migration (win over the guide and over §4)
+## 3. Verified facts from an executed Odoo 19 → 20 migration (win over the guide and over §4)
 
 Full detail and working code in `docs/MIGRATION_PROBLEMS.md`; the
 headline points, so you recognize the symptom immediately:
@@ -191,7 +168,7 @@ headline points, so you recognize the symptom immediately:
   `ir.attachment` rows pointing at filestore objects that were never actually restored (a missing app
   icon, here) are both real examples. Verify a real login and a sample of attachments resolve, don't
   just confirm the restore command exited 0 (findings §12).
-- **More removed/renamed APIs found porting `maxdooctb_ao`** (findings §13, with working fixes):
+- **More removed/renamed APIs found while porting custom modules** (findings §13, with working fixes):
   `Query` moved from `odoo.tools` to `odoo.models`; `content_disposition` moved from `odoo.http` to
   `odoo.http.stream`; `res.bank` removed from base entirely (needs a small local compat model);
   `res.company.company_registry` removed (redeclare it locally); `account.report.filter_analytic`
